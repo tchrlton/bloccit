@@ -7,7 +7,8 @@ module.exports = {
             callback(null, topics);
         })
         .catch((err) => {
-            callback(err);
+            console.log(err);
+            callback(err, null);
         })
     },
     addTopic(newTopic, callback){
