@@ -12,12 +12,12 @@ module.exports = (sequelize, DataTypes) => {
     },
 
     topicId: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false
     }
   }, {});
   Post.associate = function(models) {
-    
+
     Post.belongsTo(models.Topic, {
       foreignKey: "topicId",
       onDelete: "CASCADE"
