@@ -1,7 +1,6 @@
 const request = require("request");
 const server = require("../../src/server");
 const base = "http://localhost:3000/topics/";
-
 const sequelize = require("../../src/db/models/index").sequelize;
 const Topic = require("../../src/db/models").Topic;
 const Post = require("../../src/db/models").Post;
@@ -11,7 +10,6 @@ const Vote = require("../../src/db/models").Vote;
 describe("routes : votes", () => {
 
   beforeEach((done) => {
-
     this.user;
     this.topic;
     this.post;
@@ -54,18 +52,17 @@ describe("routes : votes", () => {
 
   describe("guest attempting to vote on a post", () => {
 
-    beforeEach((done) => { 
+    beforeEach((done) => {
       request.get({
         url: "http://localhost:3000/auth/fake",
         form: {
-          userId: 0 
+          userId: 0
         }
       },
         (err, res, body) => {
           done();
         }
       );
-
     });
 
     describe("GET /topics/:topicId/posts/:postId/votes/upvote", () => {
@@ -76,7 +73,7 @@ describe("routes : votes", () => {
         };
         request.get(options,
           (err, res, body) => {
-            Vote.findOne({  
+            Vote.findOne({ 
               where: {
                 userId: this.user.id,
                 postId: this.post.id
@@ -93,17 +90,17 @@ describe("routes : votes", () => {
           }
         );
       });
-
     });
+
   });
 
   describe("signed in user voting on a post", () => {
 
-    beforeEach((done) => {  
-      request.get({       
+    beforeEach((done) => {
+      request.get({
         url: "http://localhost:3000/auth/fake",
         form: {
-          role: "member",     
+          role: "member",
           userId: this.user.id
         }
       },
@@ -121,13 +118,13 @@ describe("routes : votes", () => {
         };
         request.get(options,
           (err, res, body) => {
-            Vote.findOne({          
+            Vote.findOne({
               where: {
                 userId: this.user.id,
                 postId: this.post.id
               }
             })
-            .then((vote) => {           
+            .then((vote) => {
               expect(vote).not.toBeNull();
               expect(vote.value).toBe(1);
               expect(vote.userId).toBe(this.user.id);
@@ -141,27 +138,22 @@ describe("routes : votes", () => {
           }
         );
       });
-    });
 
-    describe("GET /topics/:topicId/posts/:postId/votes/downvote", () => {
-
-      it("should create a downvote", (done) => {
+      it("should not create a vote with a value of anything other than 1", (done) => {
         const options = {
-          url: `${base}${this.topic.id}/posts/${this.post.id}/votes/downvote`
+          url: `${base}${this.topic.id}/posts/${this.post.id}/votes/upvote`
         };
         request.get(options,
           (err, res, body) => {
             Vote.findOne({
               where: {
                 userId: this.user.id,
-                postId: this.post.id
+                postId: this.post.id,
+                value: 2
               }
             })
-            .then((vote) => {            
-              expect(vote).not.toBeNull();
-              expect(vote.value).toBe(-1);
-              expect(vote.userId).toBe(this.user.id);
-              expect(vote.postId).toBe(this.post.id);
+            .then((vote) => {    
+              expect(vote).toBeNull();
               done();
             })
             .catch((err) => {
@@ -171,9 +163,155 @@ describe("routes : votes", () => {
           }
         );
       });
-    });
+   });
 
-  });
+   describe("GET /topics/:topicId/posts/:postId/votes/upvote", () => {
 
+     it("should not create more than one vote per user for a given post", (done) => {
+       const options = {
+         url: `${base}${this.topic.id}/posts/${this.post.id}/votes/upvote`
+       };
+       request.get(options,
+         (err, res, body) => {
+           Vote.findOne({
+             where: {
+               userId: this.user.id,
+               postId: this.post.id
+             }
+           })
+           .then((vote) => {
+             expect(vote).not.toBeNull();
+             expect(vote.value).toBe(1);
+             expect(vote.userId).toBe(this.user.id);
+             expect(vote.postId).toBe(this.post.id);
+           })
+           .then(()=>{
+             request.get(options,
+               (err, res, body) => {
+                 Vote.findOne({
+                   where: {
+                     userId: this.user.id,
+                     postId: this.post.id
+                   }
+                 })
+                 .then((vote) => {
+                   expect(vote).not.toBeNull();
+                   expect(vote.value).toBe(1);
+                   expect(vote.userId).toBe(this.user.id);
+                   expect(vote.postId).toBe(this.post.id);
+                   done();
+                 })
+              })
+           })
+           .catch((err) => {
+             console.log(err);
+             done();
+           });
+         });
+      });
+   });
+
+   describe("GET /topics/:topicId/posts/:postId/votes/downvote", () => {
+
+     it("should create a downvote", (done) => {
+       const options = {
+         url: `${base}${this.topic.id}/posts/${this.post.id}/votes/downvote`
+       };
+       request.get(options,
+         (err, res, body) => {
+           Vote.findOne({
+             where: {
+               userId: this.user.id,
+               postId: this.post.id
+             }
+           })
+           .then((vote) => {
+             expect(vote).not.toBeNull();
+             expect(vote.value).toBe(-1);
+             expect(vote.userId).toBe(this.user.id);
+             expect(vote.postId).toBe(this.post.id);
+             done();
+           })
+           .catch((err) => {
+             console.log(err);
+             done();
+           });
+         }
+       );
+     });
+   });
+
+   describe("GET /topics/:topicId/posts/:postId/votes/downvote", () => {
+
+     it("should not create more than one vote per user for a given post", (done) => {
+       const options = {
+         url: `${base}${this.topic.id}/posts/${this.post.id}/votes/downvote`
+       };
+       request.get(options,
+         (err, res, body) => {
+           Vote.findOne({
+             where: {
+               userId: this.user.id,
+               postId: this.post.id
+             }
+           })
+           .then((vote) => {
+             expect(vote).not.toBeNull();
+             expect(vote.value).toBe(-1);
+             expect(vote.userId).toBe(this.user.id);
+             expect(vote.postId).toBe(this.post.id);
+           })
+           .then(()=>{
+             request.get(options,
+               (err, res, body) => {
+                 Vote.findOne({
+                   where: {
+                     userId: this.user.id,
+                     postId: this.post.id
+                   }
+                 })
+                 .then((vote) => {
+                   expect(vote).not.toBeNull();
+                   expect(vote.value).toBe(-1);
+                   expect(vote.userId).toBe(this.user.id);
+                   expect(vote.postId).toBe(this.post.id);
+                   done();
+                 })
+              })
+           })
+           .catch((err) => {
+             console.log(err);
+             done();
+           });
+         });
+      });
+
+      it("should not create a vote with a value of anything other than -1", (done) => {
+        const options = {
+          url: `${base}${this.topic.id}/posts/${this.post.id}/votes/upvote`
+        };
+        request.get(options,
+          (err, res, body) => {
+            Vote.findOne({
+              where: {
+                userId: this.user.id,
+                postId: this.post.id,
+                value: -2
+              }
+            })
+            .then((vote) => {       
+              expect(vote).toBeNull();
+              done();
+            })
+            .catch((err) => {
+              console.log(err);
+              done();
+            });
+          }
+        );
+      });
+   });
+
+ });
 
 });

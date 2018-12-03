@@ -225,10 +225,6 @@ describe("routes : posts", () => {
 
   });
 
-  //end context for admin user
-
-  // context of member user
-
   describe("member user performing CRUD actions for Post", () => {
 
     beforeEach((done) => {
