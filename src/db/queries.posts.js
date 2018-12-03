@@ -1,7 +1,8 @@
 const Post = require("./models").Post;
 const Topic = require("./models").Topic;
 const Comment = require("./models").Comment;
-const User = require("./models").Comment;
+const User = require("./models").User;
+const Vote = require("./models").Vote;
 const Authorizer = require("../policies/post");
 
 module.exports = {
@@ -19,27 +20,26 @@ module.exports = {
       include: [
         {model: Comment, as: "comments", include: [
           {model: User }
-        ]}
+        ]}, {model: Vote, as: "votes"}
       ]
     })
+    .then((post) => {
+      callback(null, post);
+    })
+    .catch((err) => {
+      callback(err);
+    })
   },
-  deletePost(req, callback){
-      return Post.findById(req.params.id)
-      .then((post) => {
-          const authorized = new Authorizer(req.user, post).destroy();
-          if(authorized){
-              post.destroy()
-              .then((deletedRecordsCount) => {
-                  callback(null, deletedRecordsCount);
-              });
-          } else {
-              req.flash("notice", "You are not authorized to do that.");
-              callback(401, null);
-          }
-      })
-      .catch((err) => {
-          callback(err);
-      });
+  deletePost(id, callback){
+    return Post.destroy({
+      where: { id }
+    })
+    .then((deletedRecordsCount) => {
+      callback(null, deletedRecordsCount);
+    })
+    .catch((err) => {
+      callback(err);
+    })
   },
   updatePost(req, updatedPost, callback){
       return Post.findById(req.params.id)
